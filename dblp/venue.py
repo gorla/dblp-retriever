@@ -1,3 +1,4 @@
+import bibtexparser
 import logging
 import re
 
@@ -20,6 +21,7 @@ class Venue(object):
         self.uri = "https://dblp.org/db/" + self.identifier + ".html"
 
         self.papers = []
+        self.bib_entries = []
 
         # session for data retrieval
         self.session = requests.Session()
@@ -30,7 +32,8 @@ class Venue(object):
             response = self.session.get(self.uri)
 
             if response.ok:
-                logger.info("Successfully retrieved TOC of venue: " + str(self))
+                logger.info("Successfully retrieved TOC of venue: "
+                            + str(self))
 
                 tree = html.fromstring(response.content)
                 items = tree.xpath('//header[not(@class)]/h2 | //header[not(@class)]/h3 | //ul[@class="publ-list"]/li')
@@ -55,6 +58,7 @@ class Venue(object):
                             #     year = ""
                             continue
 
+                        paper_id = item.xpath('@id')[0]
                         title = item.xpath('cite[@class="data"]/span[@itemprop="name"]/descendant-or-self::*/text()')
                         if len(title) > 0:
                             title = str(" ".join(str(element).strip() for element in title))
@@ -91,6 +95,7 @@ class Venue(object):
                             self.year,
                             self.identifier,
                             current_heading,
+                            paper_id,
                             title,
                             authors,
                             pages,
@@ -99,10 +104,20 @@ class Venue(object):
 
                 logger.info("Successfully parsed TOC of venue: " + str(self))
             else:
-                logger.error("An error occurred while retrieving TOC of venue: " + str(self))
+                logger.error("An error occurred while retrieving TOC of venue: "
+                             + str(self))
 
         except ConnectionError:
-            logger.error("An error occurred while retrieving TOC of venue: " + str(self))
+            logger.error("An error occurred while retrieving TOC of venue: "
+                         + str(self))
+
+    def retrieve_venue_bibtex(self):
+        logger.info("Retrieving bibtex for venue: " + str(self))
+        for paper in self.papers:
+            bibtex = paper.get_bibtex()
+            self.bib_entries.append(bibtex)
+#        bib_database = bibtexparser.loads(self.papers[0].get_bibtex())
+#        print(bib_database.entries[1].get('title'))
 
     def validate_page_ranges(self):
         logger.info("Sorting papers of venue: " + str(self))
@@ -125,13 +140,16 @@ class Venue(object):
             if current_paper.regular_page_range and current_paper.first_page != previous_paper.last_page + 1:
                 current_paper.append_comment("issue_first_page")
                 previous_paper.append_comment("issue_last_page")
-                logger.warning("First page of paper " + str(current_paper) + " does not match previous paper "
+                logger.warning("First page of paper " + str(current_paper)
+                               + " does not match previous paper "
                                + str(previous_paper))
 
             elif current_paper.numbered_page_range and current_paper.article_number != previous_paper.article_number + 1:
                 current_paper.append_comment("issue_article_number")
                 previous_paper.append_comment("issue_article_number")
-                logger.warning("Article number of paper " + str(current_paper) + " does not match previous paper "
+                logger.warning("Article number of paper "
+                               + str(current_paper)
+                               + " does not match previous paper "
                                + str(previous_paper))
 
             previous_paper = self.papers[i]

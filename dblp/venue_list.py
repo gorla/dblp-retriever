@@ -24,7 +24,8 @@ class VenueList(object):
         :param delimiter: Column delimiter in CSV file (typically ',').
         """
 
-        # read CSV as UTF-8 encoded file (see also http://stackoverflow.com/a/844443)
+        # read CSV as UTF-8 encoded file (see also
+        # http://stackoverflow.com/a/844443)
         with codecs.open(input_file, encoding='utf8') as fp:
             logger.info("Reading venues from " + input_file + "...")
 
@@ -42,9 +43,9 @@ class VenueList(object):
             # read CSV file
             for row in reader:
                 if row:
-                    self.venues.append(
-                        Venue(row[venue_index], row[year_index], row[identifier_index])
-                    )
+                    self.venues.append(Venue(row[venue_index],
+                                             row[year_index],
+                                             row[identifier_index]))
                 else:
                     raise IllegalArgumentError("Wrong CSV format.")
 
@@ -55,9 +56,26 @@ class VenueList(object):
         for venue in self.venues:
             venue.retrieve_papers()
 
+    def retrieve_bibtex_entries(self):
+        for venue in self.venues:
+            venue.retrieve_venue_bibtex()
+
     def validate_page_ranges(self):
         for venue in self.venues:
             venue.validate_page_ranges()
+
+    def write_to_bibtex(self, output_dir):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # create a separate bibtex per venue
+        for venue in self.venues:
+            bib_file_path = os.path.join(output_dir, venue.name+".bib")
+            with codecs.open(bib_file_path, 'w', encoding='utf8') as bfp:
+                logger.info('Exporting bibtex entries to ' +
+                            bib_file_path + '')
+                for bib_entry in venue.bib_entries:
+                    bfp.writelines(bib_entry)
 
     def write_to_csv(self, output_dir, delimiter):
         """
@@ -75,7 +93,8 @@ class VenueList(object):
 
         file_path = os.path.join(output_dir, self.filename)
 
-        # write paper list to UTF8-encoded CSV file (see also http://stackoverflow.com/a/844443)
+        # write paper list to UTF8-encoded CSV file (see also
+        # http://stackoverflow.com/a/844443)
         with codecs.open(file_path, 'w', encoding='utf8') as fp:
             logger.info('Exporting papers to ' + file_path + '...')
             writer = csv.writer(fp, delimiter=delimiter)
@@ -94,10 +113,12 @@ class VenueList(object):
                             count = count + 1
                         else:
                             raise IllegalArgumentError(
-                                str(len(column_names) - len(row)) + " parameter(s) is/are missing for venue "
-                                + venue.identifier)
+                                str(len(column_names) - len(row)) +
+                                " parameter(s) is/are missing for venue " +
+                                venue.identifier)
 
                 except UnicodeEncodeError:
-                    logger.error("Encoding error while writing data for venue: " + venue.identifier)
+                    logger.error("Encoding error while writing venue:" +
+                                 venue.identifier)
 
             logger.info(str(count) + ' papers have been exported.')

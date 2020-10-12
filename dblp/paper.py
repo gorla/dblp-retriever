@@ -1,4 +1,5 @@
 import logging
+import urllib.request
 
 from util.regex import REGULAR_PAGE_RANGE_REGEX, NUMBERED_PAGE_RANGE_REGEX
 
@@ -8,11 +9,13 @@ logger = logging.getLogger("dblp-retriever_logger")
 class Paper(object):
     """ Paper metadata from DBLP. """
 
-    def __init__(self, venue, year, identifier, heading, title, authors, page_range, electronic_edition):
+    def __init__(self, venue, year, identifier, heading, dblp_id, title,
+                 authors, page_range, electronic_edition):
         self.venue = venue
         self.year = year
         self.identifier = identifier
         self.heading = heading
+        self.dblp_id = dblp_id
         self.title = title
         self.authors = authors
         self.page_range = page_range
@@ -70,13 +73,24 @@ class Paper(object):
     def __str__(self):
         return str(self.electronic_edition)
 
+    def get_bibtex(self):
+        url = 'http://dblp.org/rec/bib/{}.bib'.format(self.dblp_id)
+        logger.info("Retrieving bibtex from "+url)
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        text = data.decode('utf-8')
+        return text
+
     def get_column_values(self):
-        return [self.venue, self.year, self.identifier, self.heading, self.title, self.authors, self.page_range,
-                self.length, self.electronic_edition, self.comment]
+        return [self.venue, self.year, self.identifier, self.heading,
+                self.title, self.authors,
+                self.page_range, self.length, self.electronic_edition,
+                self.comment]
 
     @classmethod
     def get_column_names(cls):
-        return ["venue", "year", "identifier", "heading", "title", "authors", "page_range", "length",
+        return ["venue", "year", "identifier", "heading", "title",
+                "authors", "page_range", "length",
                 "electronic_edition", "comment"]
 
     @classmethod

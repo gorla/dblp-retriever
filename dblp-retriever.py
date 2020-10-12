@@ -29,6 +29,12 @@ def get_argument_parser():
         help='delimiter for CSV files (default: \',\')',
         dest='delimiter'
     )
+    arg_parser.add_argument(
+        '-b', '--bibtex',
+        action='store_true',
+        help='download bibtext information (default: False)',
+    )
+
     return arg_parser
 
 
@@ -41,8 +47,12 @@ def main():
     venue_list = VenueList()
     venue_list.read_from_csv(args.input_file, args.delimiter)
     venue_list.retrieve_papers()
+    if args.bibtex:
+        venue_list.retrieve_bibtex_entries()
     venue_list.validate_page_ranges()
     venue_list.write_to_csv(args.output_dir, args.delimiter)
+    if args.bibtex:
+        venue_list.write_to_bibtex(args.output_dir)
 
 
 if __name__ == '__main__':
