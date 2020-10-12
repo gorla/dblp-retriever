@@ -68,9 +68,10 @@ class VenueList(object):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # create a separate bibtex per venue
+        # create a separate bibtex per venue names <venue><year>.bib
         for venue in self.venues:
-            bib_file_path = os.path.join(output_dir, venue.name+".bib")
+            bib_file_path = os.path.join(output_dir, venue.name +
+                                         venue.year + ".bib")
             with codecs.open(bib_file_path, 'w', encoding='utf8') as bfp:
                 logger.info('Exporting bibtex entries to ' +
                             bib_file_path + '')
